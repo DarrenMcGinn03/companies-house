@@ -1,0 +1,6 @@
+*.zip
+*.csv
+*.html
+*.parquet
+.venv/
+.vscode/
