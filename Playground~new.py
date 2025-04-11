@@ -4,7 +4,7 @@ import os #importing os to set work directory
 import polars as pl #importing polars
 
 os.chdir("C:/Users/dazmc/OneDrive/Documents/companies-house") #setting work directory
-#
+
 os.getcwd() #Checking the working directory
 
 data = pl.read_csv("BasicCompanyData-2025-04-01-part1_7.csv") #reading in the company data
@@ -155,7 +155,6 @@ print(df)
 #company number and date in name of file??
 
 from ixbrlparse import IXBRL
-
 with open('Prod223_3928_00043435_20241031.html', encoding="utf8") as a:
     x = IXBRL(a)
 
@@ -166,6 +165,8 @@ print(x.filetype)
 print(x.units)
 
 print(x.numeric)
+
+type(x.numeric)
 
 x.numeric[0].schema
 
@@ -183,23 +184,84 @@ def getx(x, a):
 
 getx(x, 0) #list of values 
 
-type(x.numeric) 
+#a function that takes the numeric value
+
+def getx2(x):
+    z=[]
+    z.append(x.name)
+    z.append(x.value)
+    z.append(x.schema)
+    z.append(x.context)
+    return z
+
+getx2(x.numeric[1]) 
+getx2(x.nonnumeric[0])
 
 xlist = pl.DataFrame(x.numeric)
-
 lsize = xlist.shape #13 lines
 
 llength = lsize[0] + 1 #assigning the length
 llength
-
 x.numeric
 
 #look at maps in python 
 
-m = map(getx, (x),(llength))
-num_fields = list()
-for i in range(llength):
-    num_fields.append(getx(x, i))
-
 num_fields = list(map(lambda y: getx(x, y), range(len(x.numeric))))
+
+num_fields = list(map(getx2, x.numeric))
+num_fields
+
+#we want a function that will take the path and return the numeric and non-numeric values
+#as a dictonary
+
+def pathval(path): #input path in speach marks!
+    p = path #set value to path
+    with open(p, encoding="utf8") as a: 
+        p2 = IXBRL(a) #opens the ixbrl file
+    p3 = list(map(getx2, p2.numeric)) #records the numeric values
+    p4 = list(map(getx2, p2.nonnumeric)) #the numeric values
+    pdict = {"numeric_values": p3,  #returns both values as dictonary.
+             "non-numeric_values": p4}
+    return pdict
+
+data1 = pathval('Prod223_3928_00043435_20241031.html') #our first file 
+    
+data1
+
+#function that reads path and spits dictonary with crn compant number and balance date then combine with date
+# then combine dictonary
+
+def compdetails(path):
+    p = path
+    chunks = p.split('_') #splits the chunks
+    relevchunk1 = chunks[2] #assigns the company number
+    relevchunk12 = chunks[3].split('.') #splits further
+    relevchunk2 = relevchunk12[0] #assigns balance sheet date
+    chunkdict = {"CRN:": relevchunk1,
+                 "Balance sheet date": relevchunk2} #creates dictonary
+    return (chunkdict)
+
+data2 =compdetails('Prod223_3928_00043435_20241031.html') 
+data2
+
+
+ex = 'Prod223_3928_00043435_20241031.html'
+ex1 = ex.split('_')
+ex1[2]
+ex2 = ex1[3].split('.')
+ex2[0]
+
+data3 = {**data1, **data2}
+print(data3)
+
+def allinfo (path):
+    p = path
+    d1 = pathval(p) #info of company
+    d2 = compdetails(p) #CRN and balance sheet date
+    combineddict = {**d1, **d2} #combining dictonaries
+    return combineddict
+
+allinfo('Prod223_3928_00043435_20241031.html')
+
+
 
