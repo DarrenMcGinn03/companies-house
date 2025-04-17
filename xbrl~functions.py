@@ -233,3 +233,64 @@ def details (number):
     nonnumeric = nandnn[1].filter(pl.col("CompanyNumber").is_in([number])) #non-numeric
     return (tabledata, numeric, nonnumeric)
 
+def details2 (excelfile, accountsfile, companynumber): #excelfile must be dataframe
+    """
+    Returns a specific companies infomation
+
+    Takes infomation and outputs a specific companies numeric, non-numeric and
+    basic infomation.
+    Inputs: 
+        excelfile containing all companies data (mainly location) (excel file)
+        The accountsfile, containing infomation on all the companies accounts. ("Zip file")
+        The company number ("number")
+    """
+    accounts = accountreader(accountsfile)
+    dataframe1 = pl.DataFrame() #creates an empty dataframe
+    for i in range(len(accounts)): #runs through all of account data
+        try:
+            polarstemp = pl.DataFrame([accounts[i]], strict = False)
+            dataframe1 = pl.concat([dataframe1, polarstemp], how="vertical")
+            i = i + 1
+            print(i)
+        except:
+            print("bad")
+    joineddata = excelfile.join(dataframe1, on="CompanyNumber") #joining datasets together
+    nandnn = NumericAndNonNumeric(joineddata)
+    tabledata = excelfile.filter(pl.col("CompanyNumber").is_in([companynumber])) #original table
+    numeric = nandnn[0].filter(pl.col("CompanyNumber").is_in([companynumber])) #numeric
+    nonnumeric = nandnn[1].filter(pl.col("CompanyNumber").is_in([companynumber])) #non-numeric
+    return (tabledata, numeric, nonnumeric)
+
+#NOTES:  (for details2 and companydetails3)
+    #Ensure company number is inside the accounts data before running
+    #Ensure "CompanyNumber" is the exact same (no space before number)
+    #Might take a while to run (15 mins apporx)
+
+def companydetails3 (excelfile, accountsfile): #excelfile must be dataframe
+    """
+    Returns info on all accounts data
+
+    This function is simmilar to the previous one (details2) however
+    will return numeric, non-numeric and basic info on all companies that are in
+    the accounts folder 
+    Inputs:
+        excel file containing info on all companies (excel file)
+        accounts file contatining info on companies (Zip folder)
+    """
+    accounts = accountreader(accountsfile)
+    dataframe1 = pl.DataFrame() #creates an empty dataframe
+    for i in range(len(accounts)): #runs through all of account data
+        try:
+            polarstemp = pl.DataFrame([accounts[i]], strict = False)
+            dataframe1 = pl.concat([dataframe1, polarstemp], how="vertical")
+            i = i + 1
+            print(i)
+        except:
+            print("bad")
+    joineddata = excelfile.join(dataframe1, on="CompanyNumber") #joining datasets together
+    nandnn = NumericAndNonNumeric(joineddata)
+    tabledata = joineddata #original table
+    numeric = nandnn[0]   #numeric
+    nonnumeric = nandnn[1]  #non-numeric
+    return (tabledata, numeric, nonnumeric)
+

@@ -86,9 +86,6 @@ def getx2(x):
 getx2(x.numeric[0]) 
 getx2(x.nonnumeric[0])
 
-xlist = pl.DataFrame(x.numeric)
-lsize = xlist.shape #13 lines
-
 #look at maps in python 
 num_fields = list(map(getx2, x.numeric))
 num_fields
@@ -105,7 +102,6 @@ def pathval(path): #input path in speach marks!
     return pdict
 
 data1 = pathval('Prod223_3928_00043435_20241031.html') #our first file 
-data1
 
 #function that reads path and splits dictonary with crn and balance sheet date
 def compdetails(path):
@@ -119,7 +115,7 @@ def compdetails(path):
     return (chunkdict)
 
 data2 = compdetails('Prod223_3928_00043435_20241031.html') 
-data2
+
 
 def allinfo (path):
     p = path
@@ -255,14 +251,6 @@ def details2 (excelfile, accountsfile, companynumber): #excelfile must be datafr
 
 a = details2(tnew, "Accounts_Bulk_Data-2025-04-02.zip", "08183152")
 
-
-numericuniques = nandnn[0].unique(subset = ["CompanyNumber"]) #1 numeric value from each company in the dataset 
-nonnumericuniques = nandnn[1].unique(subset = ["CompanyNumber"]) #1 non-numeric value from each company
-numcompnum = numericuniques.select("CompanyNumber")
-nonnumcompnum = nonnumericuniques.select("CompanyNumber")
-
-testjoin = nonnumcompnum.join(tnew, on = "CompanyNumber") 
-
 #returns three data tables for all compamies
 def companydetails3 (excelfile, accountsfile): #excelfile must be dataframe
     accounts = accountreader(accountsfile)
@@ -282,18 +270,4 @@ def companydetails3 (excelfile, accountsfile): #excelfile must be dataframe
     nonnumeric = nandnn[1]  #non-numeric
     return (tabledata, numeric, nonnumeric)
 
-companydetails3(tnew, "Accounts_Bulk_Data-2025-04-02.zip")
-#NOTES
-
-#A new function that will take the two files and join them, then search for a company number
-#will take less time
-
-#HAS to be a company in the accounts file
-
-#cut down the ones that arnt in the zip file 
-#present 9700 companies numeric and non numeric with original.
-
-#Notes to add: ensure files are in right format, joins on Company number (change if required)
-
-#Changing so that it joins on "CompanyNumber" not " CompanyNumber"
-#after ran check NumericAndNonNumeric function to see if it needs change (rename)
+attempt = companydetails3(tnew, "Accounts_Bulk_Data-2025-04-02.zip")

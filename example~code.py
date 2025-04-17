@@ -222,3 +222,71 @@ t = t.rename({" CompanyNumber": "CompanyNumber", "RegAddress.PostCode": "PostCod
               "RegAddress.AddressLine1": "AddressLine1"})
 tnew = t.drop("RegAddress.CareOf", "RegAddress.POBox")
 
+def NumericAndNonNumeric(dataset):  #outputs the numeric and non-numeric values in a table
+    num_val = (dataset.select(["CompanyNumber", "Balance sheet date", "numeric_values"]))
+    num_val = num_val.explode('numeric_values')
+    num_val = num_val.with_columns(pl.col("numeric_values").list.to_struct()).unnest('numeric_values')
+    a = num_val.rename({"field_0": "Variable", "field_1": "Value", "field_2": "1", "field_3":"2"})
+
+    nonnum_val = (dataset.select(["CompanyNumber", "Balance sheet date", "non-numeric_values"]))
+    nonnum_val = nonnum_val.explode('non-numeric_values')
+    nonnum_val = nonnum_val.with_columns(pl.col("non-numeric_values").list.to_struct()).unnest('non-numeric_values')
+    b = nonnum_val.rename({"field_0": "Variable", "field_1": "Value", "field_2": "1", "field_3":"2"})
+
+    return(a, b)
+
+nandnn = NumericAndNonNumeric(joineddata) #two datasets for each company with their numeric and 
+#non-numeric values
+
+test = nandnn[0].filter(pl.col("CompanyNumber").is_in(["05884007"]))
+test #returns all numeric values for company 05884007
+
+def details (number):
+    tabledata = tnew.filter(pl.col("CompanyNumber").is_in([number])) #original table
+    numeric = nandnn[0].filter(pl.col("CompanyNumber").is_in([number])) #numeric
+    nonnumeric = nandnn[1].filter(pl.col("CompanyNumber").is_in([number])) #non-numeric
+    return (tabledata, numeric, nonnumeric)
+    
+details("10062449")
+
+
+def details2 (excelfile, accountsfile, companynumber): #excelfile must be dataframe
+    accounts = accountreader(accountsfile)
+    dataframe1 = pl.DataFrame() #creates an empty dataframe
+    for i in range(len(accounts)): #runs through all of account data
+        try:
+            polarstemp = pl.DataFrame([accounts[i]], strict = False)
+            dataframe1 = pl.concat([dataframe1, polarstemp], how="vertical")
+            i = i + 1
+            print(i)
+        except:
+            print("bad")
+    joineddata = excelfile.join(dataframe1, on="CompanyNumber") #joining datasets together
+    nandnn = NumericAndNonNumeric(joineddata)
+    tabledata = excelfile.filter(pl.col("CompanyNumber").is_in([companynumber])) #original table
+    numeric = nandnn[0].filter(pl.col("CompanyNumber").is_in([companynumber])) #numeric
+    nonnumeric = nandnn[1].filter(pl.col("CompanyNumber").is_in([companynumber])) #non-numeric
+    return (tabledata, numeric, nonnumeric)
+
+
+a = details2(tnew, "Accounts_Bulk_Data-2025-04-02.zip", "08183152")
+
+def companydetails3 (excelfile, accountsfile): #excelfile must be dataframe
+    accounts = accountreader(accountsfile)
+    dataframe1 = pl.DataFrame() #creates an empty dataframe
+    for i in range(len(accounts)): #runs through all of account data
+        try:
+            polarstemp = pl.DataFrame([accounts[i]], strict = False)
+            dataframe1 = pl.concat([dataframe1, polarstemp], how="vertical")
+            i = i + 1
+            print(i)
+        except:
+            print("bad")
+    joineddata = excelfile.join(dataframe1, on="CompanyNumber") #joining datasets together
+    nandnn = NumericAndNonNumeric(joineddata)
+    tabledata = joineddata #original table
+    numeric = nandnn[0]   #numeric
+    nonnumeric = nandnn[1]  #non-numeric
+    return (tabledata, numeric, nonnumeric)
+
+attempt = companydetails3(tnew, "Accounts_Bulk_Data-2025-04-02.zip")
