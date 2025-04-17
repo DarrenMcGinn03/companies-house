@@ -4,3 +4,4 @@
 *.parquet
 .venv/
 .vscode/
+*.pickle

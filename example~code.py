@@ -1,7 +1,9 @@
-#Example A using the 2nd file from the acoounts data
+#Functions and code for xbrl project hmrc
 import os #importing os to set work directory
 import polars as pl #importing polars
 from ixbrlparse import IXBRL
+import zipfile
+
 os.chdir("C:/Users/dazmc/OneDrive/Documents/companies-house") #setting work directory
 os.getcwd() #Checking the working directory
 
@@ -113,7 +115,7 @@ def compdetails(path):
     relevchunk1 = chunks[2] #assigns the company number
     relevchunk12 = chunks[3].split('.') #splits further
     relevchunk2 = relevchunk12[0] #assigns balance sheet date
-    chunkdict = {"CRN:": relevchunk1,
+    chunkdict = {" CompanyNumber": relevchunk1,
                  "Balance sheet date": relevchunk2} #creates dictonary
     return (chunkdict)
 
@@ -136,9 +138,87 @@ def allinfo (path):
     combineddict = {**d1, **d2} #combining dictonaries
     return combineddict
 
+def accountreader(zipfolder):
+    """
+    Reads all the xbrl files in the zip folder
 
-A = compdetails('Prod223_3928_00119307_20241231.html') #the 2nd data set as our example
-print(A) #returns the dictonary
+    Extracts all the html files from the accounts zip 
+    folder, reads the html files as a dictonary and stores 
+    them in a list.
+    Inputs:
+        zip file containing xbrl files(zip)
+    Outputs:
+        A list containing all dictonaries of info
+        from the xbrl files (list)
+    """
+    allallinfo = [] #an empty dataframe where the data will be stored
+    zip = zipfile.ZipFile(zipfolder, "r") #reads the zip file
+    extra = zip.extractall() #extracts all data
+    zipfiles = zip.namelist() #names of each file
+    for i in range(len(zipfiles)): #to loop through the zip folder
+        try:
+            i = i+1
+            print(zipfiles[i])
+            b = allinfo(zipfiles[i]) #returns the info
+            allallinfo.append(b)
+        except: 
+            allallinfo.append([])            
+    return allallinfo
 
+accountdetails = accountreader("Accounts_Bulk_Data-2025-04-02.zip")
 
+import pickle  #saves the data set
+with open('AccountsData.pickle', 'wb') as handle:
+    pickle.dump(accountdetails, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+with open('AccountsData.pickle', 'rb') as handle:
+    Accounts_Bulk_Data = pickle.load(handle)
+
+dataframe1 = pl.DataFrame() #creates an empty dataframe
+for i in range(len(accountdetails)): #runs through all of account data
+    try:
+        polarstemp = pl.DataFrame([accountdetails[i]], strict = False)
+        dataframe1 = pl.concat([dataframe1, polarstemp], how="vertical")
+        i = i + 1
+        print(i)
+    except:
+        print("bad")
+
+with open('dataframe1.pickle', 'wb') as handle:
+    pickle.dump(dataframe1, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+with open('dataframe1.pickle', 'rb') as handle:
+    dataframe1 = pickle.load(handle)
+
+joineddata = t.join(dataframe1, on=" CompanyNumber") #joins the two datasets
+
+def NumericAndNonNumeric(dataset):  #outputs the numeric and non-numeric values in a table
+    """
+    Numeric and non-numeric values in a table
+
+    After entering a dataframe to this function, it will return 
+    two tables thats the numeric and non-numeric info on each company
+    Inputs:
+        Company dataset (dataframe)
+    Outputs:
+        Table of numeric info and table of non-numeric info (dataframes)
+    """
+    num_val = (dataset.select([" CompanyNumber", "Balance sheet date", "numeric_values"]))
+    num_val = num_val.explode('numeric_values')
+    num_val = num_val.with_columns(pl.col("numeric_values").list.to_struct()).unnest('numeric_values')
+    a = num_val.rename({" CompanyNumber": "CompanyNumer", "field_0": "Variable", "field_1": "Value", "field_2": "1", "field_3":"2"})
+
+    nonnum_val = (dataset.select([" CompanyNumber", "Balance sheet date", "non-numeric_values"]))
+    nonnum_val = nonnum_val.explode('non-numeric_values')
+    nonnum_val = nonnum_val.with_columns(pl.col("non-numeric_values").list.to_struct()).unnest('non-numeric_values')
+    b = nonnum_val.rename({" CompanyNumber": "CompanyNumer", "field_0": "Variable", "field_1": "Value", "field_2": "1", "field_3":"2"})
+
+    return(a, b)
+
+#Renaming and cleaning the company data table
+t = t.rename({" CompanyNumber": "CompanyNumber", "RegAddress.PostCode": "PostCode",
+              "RegAddress.Country": "Country", "RegAddress.County": "County",
+              "RegAddress.PostTown": "PostTown", " RegAddress.AddressLine2": "AddressLine2",
+              "RegAddress.AddressLine1": "AddressLine1"})
+tnew = t.drop("RegAddress.CareOf", "RegAddress.POBox")
 
